@@ -3,12 +3,17 @@ kind: StatefulSet
 metadata:
   name: mariadb
   namespace: mariadb
+  labels:
+    app: mariadb
 spec:
   serviceName: "mariadb"
   replicas: 1
+  revisionHistoryLimit: 0
   selector:
     matchLabels:
       app: mariadb
+        #  strategy:
+        #    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -19,22 +24,25 @@ spec:
         image: mariadb
         ports:
         - containerPort: 3306
-          name: mariadb-port
+          name: mariadb
         env:
         # Using Secrets
         - name: MARIADB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mariadb-secret
-              key: mariadb-root-password
+              name: mariadb-root-pass
+              key: password
         volumeMounts:
-        - name: datadir
-          mountPath: /var/lib/mysql/
+        - name: mariadb-persistent-storage
+          mountPath: /var/lib/mysql
   volumeClaimTemplates:
-  - metadata:
-      name: datadir
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 300M
+    - metadata:
+        name: mariadb-persistent-storage
+        namespace: mariadb
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Gi
+
